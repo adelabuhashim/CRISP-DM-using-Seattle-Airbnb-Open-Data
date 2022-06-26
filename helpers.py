@@ -1,6 +1,6 @@
 import pandas as pd
 import re
-
+from typing import Union
 
 def neat_display(objects):
     """
@@ -17,8 +17,7 @@ def neat_display(objects):
         )
         print()
 
-
-def list_clean(l):
+def list_clean(list_or_none):
     """
     Returns None if the list is empty.
 
@@ -28,12 +27,11 @@ def list_clean(l):
             Returns:
                     list or None
     """
-    if len(l) == 0:
-        l = None
-    return l
+    if len(list_or_none) == 0:
+        list_or_none = None
+    return list_or_none
 
-
-def merge_lists(lists):
+def merge_lists(lists: list) -> list:
     """
    Merge Tow lists or more.
 
@@ -43,31 +41,33 @@ def merge_lists(lists):
             Returns:
                     Merged List or None
     """
-    xss = [l for l in lists if l is not None]
+    non_empty_lists = [l for l in lists if l is not None]
 
-    if len(xss) == 0:
+    if len(non_empty_lists) == 0:
         return []
 
-    xss = [x for xs in xss for x in xs]
+    non_empty_lists = [x for list_ in non_empty_lists for x in list_]
 
-    return list(set(xss))
+    return list(set(non_empty_lists))
 
 
-def data_investigation(df):
+def data_investigation(df: pd.DataFrame):
     """
     Prints some investigtions of the Data Frame.
 
             Parameters:
                     df (DataFrame): The Data Frame to be investigated.
     """
-
-    a = []
+    list_columns_has_one_value = []
     for c in df.columns:
         if df[[c]].value_counts().max() / df[[c]].shape[0] == 1:
-            a.append((c, df[[c]].values[0][0]))
-    to_drop_one = list_clean(a)
+            list_columns_has_one_value.append((c, df[[c]].values[0][0]))
+    to_drop_one = list_clean(list_columns_has_one_value)
     if to_drop_one is not None:
-        to_drop_one = pd.Series([i[1] for i in a], index=[i[0] for i in a])
+        to_drop_one = pd.Series(
+            [i[1] for i in list_columns_has_one_value],
+            index=[i[0] for i in list_columns_has_one_value],
+        )
 
     to_drop_null = list(df.columns[df.isnull().mean() == 1])
     to_drop_null = list_clean(to_drop_null)
@@ -80,13 +80,15 @@ def data_investigation(df):
             ],
             index=list(df.columns),
         )
+
     except:
-        if merge_lists([to_drop_null, list(to_drop_one.index)]) is not None:
-            df_temp = df.drop(
-                columns=merge_lists([to_drop_null, list(to_drop_one.index)])
-            )
+        if to_drop_one is not None:
+            if merge_lists([to_drop_null, list(to_drop_one.index)]) is not None:
+                df_temp = df.drop(
+                    columns=merge_lists([to_drop_null, list(to_drop_one.index)])
+                )
         else:
-            df_temp = df.copy()
+            df_temp = df_temp = df.drop(columns=merge_lists([to_drop_null]))
 
         try:
             dtypes = pd.Series(
@@ -131,8 +133,7 @@ def data_investigation(df):
         ]
     )
 
-
-def get_columns_to_drop(df):
+def get_columns_to_drop(df: pd.DataFrame) -> Union[list, None]:
     """
     Return List of Columns to be dropped.
 
@@ -141,13 +142,16 @@ def get_columns_to_drop(df):
             Returns:
                     List of columns to be dropped.
     """
-    a = []
+    list_columns_has_one_value = []
     for c in df.columns:
         if df[[c]].value_counts().max() / df[[c]].shape[0] == 1:
-            a.append((c, df[[c]].values[0][0]))
-    to_drop_one = list_clean(a)
+            list_columns_has_one_value.append((c, df[[c]].values[0][0]))
+    to_drop_one = list_clean(list_columns_has_one_value)
     if to_drop_one is not None:
-        to_drop_one = pd.Series([i[1] for i in a], index=[i[0] for i in a])
+        to_drop_one = pd.Series(
+            [i[1] for i in list_columns_has_one_value],
+            index=[i[0] for i in list_columns_has_one_value],
+        )
 
     to_drop_null = list(df.columns[df.isnull().mean() == 1])
     to_drop_null = list_clean(to_drop_null)
